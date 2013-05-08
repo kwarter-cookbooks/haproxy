@@ -27,14 +27,18 @@ pool_members << node if node.run_list.roles.include?(node['haproxy']['app_server
 # TODO refactor this logic into library...see COOK-494
 pool_members.map! do |member|
   server_ip = begin
-    if member.attribute?('cloud')
-      if node.attribute?('cloud') && (member['cloud']['provider'] == node['cloud']['provider'])
-         member['cloud']['local_ipv4']
+    unless node['haproxy']['app_server_attribute']
+      if member.attribute?('cloud')
+        if node.attribute?('cloud') && (member['cloud']['provider'] == node['cloud']['provider'])
+           member['cloud']['local_ipv4']
+        else
+          member['cloud']['public_ipv4']
+        end
       else
-        member['cloud']['public_ipv4']
+        member['ipaddress']
       end
     else
-      member['ipaddress']
+      member[node['haproxy']['app_server_attribute']]
     end
   end
   {:ipaddress => server_ip, :hostname => member['hostname']}
