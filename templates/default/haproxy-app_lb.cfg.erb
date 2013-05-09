@@ -59,4 +59,5 @@ backend servers-https
 listen admin <%= node['haproxy']['admin']['address_bind'] %>:<%= node['haproxy']['admin']['port'] %>
   mode http
   stats uri /
+  stats refresh 5s
 <% end -%>

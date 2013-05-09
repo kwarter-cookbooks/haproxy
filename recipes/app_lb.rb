@@ -67,6 +67,21 @@ template "#{node['haproxy']['conf_dir']}/haproxy.cfg" do
   notifies :reload, "service[haproxy]"
 end
 
+directory "/var/log/haproxy/" do
+  owner "root"
+  group "root"
+  mode "0755"
+end
+
+template "/etc/rsyslog.d/49-haproxy.conf" do
+  source "rsyslog-haproxy.conf.erb"
+  owner "root"
+  group "root"
+  mode '0644'
+  variables()
+  notifies :restart, 'service[rsyslog]'
+end
+
 service "haproxy" do
   supports :restart => true, :status => true, :reload => true
   action [:enable, :start]
