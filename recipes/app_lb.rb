@@ -30,7 +30,7 @@ pool_members.map! do |member|
     unless node['haproxy']['app_server_attribute']
       if member.attribute?('cloud')
         if node.attribute?('cloud') && (member['cloud']['provider'] == node['cloud']['provider'])
-           member['cloud']['local_ipv4']
+          member['cloud']['local_ipv4']
         else
           member['cloud']['public_ipv4']
         end
@@ -60,9 +60,9 @@ template "#{node['haproxy']['conf_dir']}/haproxy.cfg" do
   group "root"
   mode 00644
   variables(
-    :pool_members => pool_members.uniq,
-    :defaults_options => defaults_options,
-    :defaults_timeouts => defaults_timeouts
+      :pool_members      => pool_members.sort_by { |member| member[:hostname] }.uniq,
+      :defaults_options  => defaults_options,
+      :defaults_timeouts => defaults_timeouts
   )
   notifies :reload, "service[haproxy]"
 end
