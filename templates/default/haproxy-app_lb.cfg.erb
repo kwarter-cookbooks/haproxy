@@ -36,6 +36,16 @@ frontend https
   default_backend servers-https
 <% end -%>
 
+<% if node['haproxy']['enable_stud'] -%>
+frontend https
+  bind <%= node['haproxy']['admin']['address_bind'] %>:<%= node['haproxy']['ssl_member_port'] %>
+  maxconn <%= node['haproxy']['frontend_ssl_max_connections'] %>
+  reqadd X-Forwarded-Proto:\ https
+  option forwardfor
+  option http-server-close
+  default_backend servers-http
+<% end -%>
+
 backend servers-http
   <% @pool_members.each do |member| -%>
   server <%= member[:hostname] %> <%= member[:ipaddress] %>:<%= node['haproxy']['member_port'] %> weight 1 maxconn <%= node['haproxy']['member_max_connections'] %> check

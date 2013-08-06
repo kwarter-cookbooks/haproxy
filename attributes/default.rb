@@ -33,6 +33,7 @@ default['haproxy']['enable_admin'] = true
 default['haproxy']['admin']['address_bind'] = "127.0.0.1"
 default['haproxy']['admin']['port'] = 22002
 default['haproxy']['pid_file'] = "/var/run/haproxy.pid"
+default['haproxy']['enable_stud'] = false
 
 default['haproxy']['defaults_options'] = ["httplog", "dontlognull", "redispatch"]
 default['haproxy']['x_forwarded_for'] = false
