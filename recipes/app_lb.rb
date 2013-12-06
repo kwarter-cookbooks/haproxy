@@ -60,7 +60,7 @@ template "#{node['haproxy']['conf_dir']}/haproxy.cfg" do
   group "root"
   mode 00644
   variables(
-      :pool_members      => pool_members.sort_by { |member| member[:hostname] }.uniq,
+      :pool_members      => pool_members.sort_by { |member| member[:ipaddress] }.uniq,
       :defaults_options  => defaults_options,
       :defaults_timeouts => defaults_timeouts
   )
