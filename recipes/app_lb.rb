@@ -17,7 +17,7 @@
 # limitations under the License.
 #
 
-pool_members = search("node", "roles:#{node['haproxy']['app_server_role']} AND chef_environment:#{node.chef_environment}") || []
+pool_members = search("node", "role:#{node['haproxy']['app_server_role']} AND chef_environment:#{node.chef_environment}") || []
 
 # load balancer may be in the pool
 pool_members << node if node.run_list.roles.include?(node['haproxy']['app_server_role'])
@@ -44,32 +44,45 @@ pool_members.map! do |member|
   {:ipaddress => server_ip, :hostname => member['hostname']}
 end
 
-pool_members.sort! do |a,b|
-  a[:hostname].downcase <=> b[:hostname].downcase
-end
-
-pool = ["options httpchk #{node['haproxy']['httpchk']}"] if node['haproxy']['httpchk']
-servers = pool_members.uniq.map do |s|
-  "#{s[:hostname]} #{s[:ipaddress]}:#{node['haproxy']['member_port']} weight 1 maxconn #{node['haproxy']['member_max_connections']} check"
-end
-haproxy_lb 'servers-http' do
-  type 'backend'
-  servers servers
-  params pool
-end
-
-if node['haproxy']['enable_ssl']
-  pool = ["option ssl-hello-chk"]
-  pool << ["options httpchk #{node['haproxy']['ssl_httpchk']}"] if node['haproxy']['ssl_httpchk']
-  servers = pool_members.uniq.map do |s|
-    "#{s[:hostname]} #{s[:ipaddress]}:#{node['haproxy']['ssl_member_port']} weight 1 maxconn #{node['haproxy']['member_max_connections']} check"
-  end
-  haproxy_lb 'servers-http' do
-    type 'backend'
-    mode 'tcp'
-    servers servers
-    params pool
-  end
-end
-
 include_recipe "haproxy::install_#{node['haproxy']['install_method']}"
+
+cookbook_file "/etc/default/haproxy" do
+  source "haproxy-default"
+  owner "root"
+  group "root"
+  mode 00644
+  notifies :restart, "service[haproxy]"
+end
+
+template "#{node['haproxy']['conf_dir']}/haproxy.cfg" do
+  source "haproxy-app_lb.cfg.erb"
+  owner "root"
+  group "root"
+  mode 00644
+  variables(
+      :pool_members      => pool_members.sort_by { |member| member[:ipaddress] }.uniq,
+      :defaults_options  => haproxy_defaults_options,
+      :defaults_timeouts => haproxy_defaults_timeouts
+  )
+  notifies :reload, "service[haproxy]"
+end
+
+directory "/var/log/haproxy/" do
+  owner "root"
+  group "root"
+  mode "0755"
+end
+
+template "/etc/rsyslog.d/49-haproxy.conf" do
+  source "rsyslog-haproxy.conf.erb"
+  owner "root"
+  group "root"
+  mode '0644'
+  variables()
+  notifies :restart, 'service[rsyslog]'
+end
+
+service "haproxy" do
+  supports :restart => true, :status => true, :reload => true
+  action [:enable, :start]
+end
