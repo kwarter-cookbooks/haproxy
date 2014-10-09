@@ -33,7 +33,7 @@ if node['haproxy']['enable_admin']
   haproxy_lb "admin" do
     bind "#{admin['address_bind']}:#{admin['port']}"
     mode 'http'
-    params({ 'stats' => 'uri /'})
+    params(admin['options'])
   end
 end
 
@@ -93,6 +93,11 @@ end
 # Re-default user/group to account for role/recipe overrides
 node.default['haproxy']['stats_socket_user'] = node['haproxy']['user']
 node.default['haproxy']['stats_socket_group'] = node['haproxy']['group']
+
+
+unless node['haproxy']['global_options'].is_a?(Hash)
+  Chef::Log.error("Global options needs to be a Hash of the format: { 'option' => 'value' }. Please set node['haproxy']['global_options'] accordingly.")
+end
 
 template "#{node['haproxy']['conf_dir']}/haproxy.cfg" do
   source "haproxy.cfg.erb"
